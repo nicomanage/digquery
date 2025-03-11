@@ -51,6 +51,7 @@ func dig(req DigRequest) DigResult {
 						TTL:           fields[1],
 						RequestServer: s,
 					})
+					continue
 				}
 			} else {
 				answers = append(answers, Answer{
