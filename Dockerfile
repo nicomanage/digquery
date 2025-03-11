@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y bind9-utils && rm -rf /var/lib/apt/lists/*
 
 COPY go.mod ./
-COPY go.sum ./
+#COPY go.sum ./
 RUN go mod download
 
 COPY *.go ./
