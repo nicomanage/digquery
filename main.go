@@ -49,6 +49,12 @@ func dig(req DigRequest) DigResult {
 						RequestServer: s,
 					})
 				}
+			} else {
+				answers = append(answers, Answer{
+					RequestServer: s,
+					Error:         "No answer",
+				})
+				continue
 			}
 		}
 	}
