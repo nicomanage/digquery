@@ -38,16 +38,15 @@ func dig(req DigRequest) DigResult {
 		}
 
 		lines := strings.Split(string(out), "\n")
-		line := lines[len(lines)-2]
-		if strings.HasPrefix(line, ";") {
-			answers = append(answers, Answer{
-				RequestServer: s,
-				Error:         "No answer",
-			})
-		} else {
+		haveAnswer := false
+		for _, line := range lines {
+			if strings.HasPrefix(line, ";") {
+				continue
+			}
 			if line != "" {
 				fields := strings.Fields(line)
 				if len(fields) >= 5 {
+					haveAnswer = true
 					answers = append(answers, Answer{
 						IP:            fields[4],
 						RecordType:    fields[3],
@@ -56,11 +55,16 @@ func dig(req DigRequest) DigResult {
 					})
 					continue
 				}
+			} else {
+				if !haveAnswer {
+					answers = append(answers, Answer{
+						RequestServer: s,
+						Error:         "No answer",
+					})
+				}
 			}
 		}
-
 	}
-
 	result := DigResult{Answer: answers}
 	return result
 }
