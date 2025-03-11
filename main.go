@@ -8,14 +8,14 @@ import (
 
 type DigResult struct {
 	Answer []Answer `json:"answer"`
-	Error  string   `json:"error,omitempty"`
 }
 
 type Answer struct {
-	IP            string `json:"ip"`
-	TTL           string `json:"ttl"`
-	RecordType    string `json:"record_type"`
-	RequestServer string `json:"request_server"`
+	IP            string `json:"ip,omitempty"`
+	TTL           string `json:"ttl,omitempty"`
+	RecordType    string `json:"record_type,omitempty"`
+	RequestServer string `json:"request_server,omitempty"`
+	Error         string `json:"error,omitempty"`
 }
 
 type DigRequest struct {
@@ -30,7 +30,11 @@ func dig(req DigRequest) (DigResult, error) {
 		cmd := exec.Command("dig", req.Domain, req.TypeOfRecord, "@"+s, "+noall", "+answer")
 		out, err := cmd.Output()
 		if err != nil {
-			return DigResult{}, err
+			answers = append(answers, Answer{
+				RequestServer: s,
+				Error:         err.Error(),
+			})
+			continue
 		}
 
 		lines := strings.Split(string(out), "\n")
@@ -48,7 +52,7 @@ func dig(req DigRequest) (DigResult, error) {
 			}
 		}
 	}
-	result := DigResult{Answer: answers, Error: ""}
+	result := DigResult{Answer: answers}
 	return result, nil
 }
 
