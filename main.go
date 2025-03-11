@@ -12,15 +12,44 @@ type DigResult struct {
 }
 
 type Answer struct {
-	IP         string `json:"ip"`
-	TTL        string `json:"ttl"`
-	RecordType string `json:"record_type"`
+	IP            string `json:"ip"`
+	TTL           string `json:"ttl"`
+	RecordType    string `json:"record_type"`
+	RequestServer string `json:"request_server"`
 }
 
 type DigRequest struct {
-	Query        string `json:"query"`
+	Domain       string `json:"query"`
 	TypeOfRecord string `json:"type"`
-	Server       string `json:"server"`
+}
+
+func dig(req DigRequest) (DigResult, error) {
+	var server = []string{"1.1.1.1", "8.8.8.8", "114.114.114.114", "2400:3200:baba::1", "2402:4e00::"}
+	var answers []Answer
+	for _, s := range server {
+		cmd := exec.Command("dig", req.Domain, req.TypeOfRecord, "@"+s, "+noall", "+answer")
+		out, err := cmd.Output()
+		if err != nil {
+			return DigResult{}, err
+		}
+
+		lines := strings.Split(string(out), "\n")
+		for _, line := range lines {
+			if line != "" {
+				fields := strings.Fields(line)
+				if len(fields) >= 5 {
+					answers = append(answers, Answer{
+						IP:            fields[4],
+						RecordType:    fields[3],
+						TTL:           fields[1],
+						RequestServer: s,
+					})
+				}
+			}
+		}
+	}
+	result := DigResult{Answer: answers, Error: ""}
+	return result, nil
 }
 
 func handler(c *gin.Context) {
@@ -29,32 +58,11 @@ func handler(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Invalid JSON body"})
 		return
 	}
-
-	cmd := exec.Command("dig", req.Query, req.TypeOfRecord, "@"+req.Server, "+noall", "+answer")
-	out, err := cmd.Output()
+	digResult, err := dig(req)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
-		return
 	}
-
-	lines := strings.Split(string(out), "\n")
-	var answers []Answer
-
-	for _, line := range lines {
-		if line != "" {
-			fields := strings.Fields(line)
-			if len(fields) >= 5 {
-				answers = append(answers, Answer{
-					IP:         fields[4],
-					RecordType: fields[3],
-					TTL:        fields[1],
-				})
-			}
-		}
-	}
-	result := DigResult{Answer: answers, Error: ""}
-
-	c.JSON(200, result)
+	c.JSON(200, digResult)
 }
 
 func main() {
