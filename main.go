@@ -23,7 +23,7 @@ type DigRequest struct {
 	TypeOfRecord string `json:"type"`
 }
 
-func dig(req DigRequest) (DigResult, error) {
+func dig(req DigRequest) DigResult {
 	var server = []string{"1.1.1.1", "8.8.8.8", "114.114.114.114", "2400:3200:baba::1", "2402:4e00::"}
 	var answers []Answer
 	for _, s := range server {
@@ -53,7 +53,7 @@ func dig(req DigRequest) (DigResult, error) {
 		}
 	}
 	result := DigResult{Answer: answers}
-	return result, nil
+	return result
 }
 
 func handler(c *gin.Context) {
@@ -62,10 +62,7 @@ func handler(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Invalid JSON body"})
 		return
 	}
-	digResult, err := dig(req)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-	}
+	digResult := dig(req)
 	c.JSON(200, digResult)
 }
 
