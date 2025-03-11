@@ -1,48 +1,69 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
+	"github.com/gin-gonic/gin"
 	"os/exec"
 	"strings"
 )
 
 type DigResult struct {
-	Answer []string `json:"answer"`
+	Answer []Answer `json:"answer"`
 	Error  string   `json:"error,omitempty"`
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	domain := r.URL.Query().Get("domain")
-	if domain == "" {
-		http.Error(w, "Missing 'domain' parameter", http.StatusBadRequest)
+type Answer struct {
+	IP         string `json:"ip"`
+	TTL        string `json:"ttl"`
+	RecordType string `json:"record_type"`
+}
+
+type DigRequest struct {
+	Domain       string `json:"domain"`
+	TypeOfRecord string `json:"type"`
+	Server       string `json:"server"`
+}
+
+func handler(c *gin.Context) {
+	var req DigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid JSON body"})
 		return
 	}
 
-	cmd := exec.Command("dig", "+short", domain, "A")
+	if req.Domain == "" {
+		c.JSON(400, gin.H{"error": "Missing 'domain' parameter"})
+		return
+	}
+
+	cmd := exec.Command("dig", req.Domain, req.TypeOfRecord, "@"+req.Server, "+noall", "+answer")
 	out, err := cmd.Output()
 	if err != nil {
-		//Handle errors robustly.  Consider logging, more specific error messages, etc.
-		fmt.Fprintf(w, "{\"error\":\"%s\"}", err.Error())
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
-	result := DigResult{Answer: strings.Split(string(out), "\n"), Error: ""}
-	//Clean up empty lines in the result
-	var cleanedAnswer []string
-	for _, line := range result.Answer {
+	lines := strings.Split(string(out), "\n")
+	var answers []Answer
+
+	for _, line := range lines {
 		if line != "" {
-			cleanedAnswer = append(cleanedAnswer, line)
+			fields := strings.Fields(line)
+			if len(fields) >= 5 {
+				answers = append(answers, Answer{
+					IP:         fields[4],
+					RecordType: fields[3],
+					TTL:        fields[1],
+				})
+			}
 		}
 	}
-	result.Answer = cleanedAnswer
+	result := DigResult{Answer: answers, Error: ""}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	c.JSON(200, result)
 }
 
 func main() {
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	r := gin.Default()
+	r.POST("/dig", handler)
+	_ = r.Run(":8080")
 }
