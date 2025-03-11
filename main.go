@@ -65,7 +65,6 @@ func digCommand(wg *sync.WaitGroup, answers *[]Answer, domain string, server str
 					TTL:           fields[1],
 					RequestServer: server,
 				})
-				continue
 			}
 		} else {
 			if !haveAnswer {
