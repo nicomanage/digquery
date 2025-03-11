@@ -18,7 +18,7 @@ type Answer struct {
 }
 
 type DigRequest struct {
-	Domain       string `json:"domain"`
+	Query        string `json:"query"`
 	TypeOfRecord string `json:"type"`
 	Server       string `json:"server"`
 }
@@ -30,12 +30,7 @@ func handler(c *gin.Context) {
 		return
 	}
 
-	if req.Domain == "" {
-		c.JSON(400, gin.H{"error": "Missing 'domain' parameter"})
-		return
-	}
-
-	cmd := exec.Command("dig", req.Domain, req.TypeOfRecord, "@"+req.Server, "+noall", "+answer")
+	cmd := exec.Command("dig", req.Query, req.TypeOfRecord, "@"+req.Server, "+noall", "+answer")
 	out, err := cmd.Output()
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
