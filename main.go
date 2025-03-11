@@ -38,7 +38,7 @@ func dig(req DigRequest) DigResult {
 		}
 
 		lines := strings.Split(string(out), "\n")
-		line := lines[len(lines)-1]
+		line := lines[len(lines)-2]
 		if strings.HasPrefix(line, ";") {
 			answers = append(answers, Answer{
 				RequestServer: s,
