@@ -3,7 +3,7 @@ FROM golang:1.24.1-bookworm
 WORKDIR /app
 
 # Install dig package
-RUN apt-get update && apt-get install -y bind9-utils && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y bind9-dnsutils && rm -rf /var/lib/apt/lists/*
 
 COPY go.mod ./
 #COPY go.sum ./
