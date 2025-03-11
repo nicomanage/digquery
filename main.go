@@ -58,6 +58,7 @@ func dig(req DigRequest) DigResult {
 					RequestServer: s,
 					Error:         "No answer",
 				})
+				continue
 			}
 		}
 	}
